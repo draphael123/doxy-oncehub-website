@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { ProviderFilter } from '@/components/provider-filter';
 import { TrendChart } from '@/components/charts/trend-chart';
 import { BarChart } from '@/components/charts/bar-chart';
+import { TimePeriodToggle } from '@/components/time-period-toggle';
 import { useDataStore } from '@/lib/store';
-import { aggregateByProvider, getUniqueWeeks } from '@/lib/insights';
+import { aggregateByProvider, getUniqueWeeks, aggregateByTimePeriod } from '@/lib/insights';
 import { downloadCSV } from '@/lib/demo-data';
 
 export default function ProvidersPage() {
@@ -23,7 +24,15 @@ export default function ProvidersPage() {
     aggregateByProvider(filteredMetrics), [filteredMetrics]
   );
 
+  const periodAggregates = useMemo(() => 
+    aggregateByTimePeriod(filteredMetrics, filters.timePeriod), [filteredMetrics, filters.timePeriod]
+  );
+
   const weeks = useMemo(() => getUniqueWeeks(filteredMetrics), [filteredMetrics]);
+  
+  const periods = useMemo(() => 
+    periodAggregates.map(p => p.week_start), [periodAggregates]
+  );
 
   // Prepare provider comparison chart data
   const providerComparisonData = useMemo(() => {
@@ -38,35 +47,60 @@ export default function ProvidersPage() {
     }));
   }, [providerAggregates]);
 
-  // Prepare weekly trend data for selected providers
-  const weeklyTrendData = useMemo(() => {
-    const dataByWeek = new Map<string, Record<string, number | string>>();
+  // Prepare trend data for selected providers (respects time period filter)
+  const trendData = useMemo(() => {
+    const dataByPeriod = new Map<string, Record<string, number | string>>();
     
-    for (const week of weeks) {
-      dataByWeek.set(week, { week_start: week });
+    // Initialize with period keys
+    for (const period of periods) {
+      dataByPeriod.set(period, { week_start: period });
     }
 
-    for (const metric of filteredMetrics) {
-      const weekData = dataByWeek.get(metric.week_start);
-      if (!weekData) continue;
+    // For monthly view, aggregate by month
+    if (filters.timePeriod === 'monthly') {
+      for (const metric of filteredMetrics) {
+        const monthKey = metric.week_start.substring(0, 7) + '-01';
+        const periodData = dataByPeriod.get(monthKey);
+        if (!periodData) continue;
 
-      const providerKey = metric.provider.replace(/[^a-zA-Z]/g, '_');
-      
-      if (metric.visits_total !== undefined) {
-        weekData[`${providerKey}_visits`] = metric.visits_total;
+        const providerKey = metric.provider.replace(/[^a-zA-Z]/g, '_');
+        
+        // Accumulate values for monthly aggregation
+        if (metric.visits_total !== undefined) {
+          periodData[`${providerKey}_visits`] = ((periodData[`${providerKey}_visits`] as number) || 0) + metric.visits_total;
+        }
+        if (metric.avg_duration_min !== undefined) {
+          // For duration, we'll take the latest value (not ideal but works)
+          periodData[`${providerKey}_duration`] = metric.avg_duration_min;
+        }
+        if (metric.hours_total !== undefined) {
+          periodData[`${providerKey}_hours`] = ((periodData[`${providerKey}_hours`] as number) || 0) + metric.hours_total;
+        }
       }
-      if (metric.avg_duration_min !== undefined) {
-        weekData[`${providerKey}_duration`] = metric.avg_duration_min;
-      }
-      if (metric.hours_total !== undefined) {
-        weekData[`${providerKey}_hours`] = metric.hours_total;
+    } else {
+      // Weekly view - direct mapping
+      for (const metric of filteredMetrics) {
+        const periodData = dataByPeriod.get(metric.week_start);
+        if (!periodData) continue;
+
+        const providerKey = metric.provider.replace(/[^a-zA-Z]/g, '_');
+        
+        if (metric.visits_total !== undefined) {
+          periodData[`${providerKey}_visits`] = metric.visits_total;
+        }
+        if (metric.avg_duration_min !== undefined) {
+          periodData[`${providerKey}_duration`] = metric.avg_duration_min;
+        }
+        if (metric.hours_total !== undefined) {
+          periodData[`${providerKey}_hours`] = metric.hours_total;
+        }
       }
     }
 
-    return Array.from(dataByWeek.values()).sort((a, b) => 
+    return Array.from(dataByPeriod.values()).sort((a, b) => 
       String(a.week_start).localeCompare(String(b.week_start))
     );
-  }, [filteredMetrics, weeks]);
+  }, [filteredMetrics, periods, filters.timePeriod]);
 
   // Get selected providers for trend lines
   const selectedProviders = useMemo(() => {
@@ -99,17 +133,20 @@ export default function ProvidersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-100 mb-1">Provider Dashboard</h1>
           <p className="text-slate-400">
             Compare and analyze individual provider performance
           </p>
         </div>
-        <Button variant="secondary" size="sm" onClick={handleExport}>
-          <Download className="w-4 h-4" />
-          Export Provider Data
-        </Button>
+        <div className="flex items-center gap-3">
+          <TimePeriodToggle />
+          <Button variant="secondary" size="sm" onClick={handleExport}>
+            <Download className="w-4 h-4" />
+            Export Provider Data
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -250,12 +287,12 @@ export default function ProvidersPage() {
             <CardHeader>
               <CardTitle>Provider Visits Over Time</CardTitle>
               <CardDescription>
-                Weekly visit trends for {selectedProviders.length} selected provider(s)
+                {filters.timePeriod === 'monthly' ? 'Monthly' : 'Weekly'} visit trends for {selectedProviders.length} selected provider(s)
               </CardDescription>
             </CardHeader>
             <CardContent>
               <TrendChart
-                data={weeklyTrendData}
+                data={trendData}
                 lines={selectedProviders.map((provider, index) => ({
                   key: `${provider.replace(/[^a-zA-Z]/g, '_')}_visits`,
                   name: provider.split(' ').slice(-1)[0],
@@ -271,12 +308,12 @@ export default function ProvidersPage() {
             <CardHeader>
               <CardTitle>Average Duration Over Time</CardTitle>
               <CardDescription>
-                Weekly average visit duration by provider
+                {filters.timePeriod === 'monthly' ? 'Monthly' : 'Weekly'} average visit duration by provider
               </CardDescription>
             </CardHeader>
             <CardContent>
               <TrendChart
-                data={weeklyTrendData}
+                data={trendData}
                 lines={selectedProviders.map((provider, index) => ({
                   key: `${provider.replace(/[^a-zA-Z]/g, '_')}_duration`,
                   name: provider.split(' ').slice(-1)[0],

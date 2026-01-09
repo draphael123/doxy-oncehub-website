@@ -30,6 +30,7 @@ const defaultFilters: FilterState = {
   providers: [],
   dateRange: { start: null, end: null },
   sources: [],
+  timePeriod: 'weekly',
 };
 
 const DataContext = createContext<DataStore | null>(null);

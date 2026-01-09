@@ -128,6 +128,8 @@ export interface RollingAverage {
 // UI State Types
 // ============================================================================
 
+export type TimePeriod = 'weekly' | 'monthly';
+
 export interface FilterState {
   providers: string[];
   dateRange: {
@@ -135,6 +137,7 @@ export interface FilterState {
     end: string | null;
   };
   sources: ('doxy_over_20' | 'gusto_hours' | 'doxy_visits')[];
+  timePeriod: TimePeriod;
 }
 
 export interface ChartDataPoint {

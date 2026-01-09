@@ -19,13 +19,14 @@ import { InsightCard } from '@/components/insight-card';
 import { FileUpload } from '@/components/file-upload';
 import { TrendChart } from '@/components/charts/trend-chart';
 import { useDataStore } from '@/lib/store';
-import { aggregateByWeek, calculateKPIs, generateInsights } from '@/lib/insights';
+import { aggregateByTimePeriod, calculateKPIs, generateInsights } from '@/lib/insights';
 import { downloadCSV } from '@/lib/demo-data';
+import { TimePeriodToggle } from '@/components/time-period-toggle';
 
 function OverviewContent() {
   const searchParams = useSearchParams();
   const showUpload = searchParams.get('upload') === 'true';
-  const { metrics, loadDemoData, loadDefaultFile, parseResult, filteredMetrics, error, isLoading } = useDataStore();
+  const { metrics, loadDemoData, loadDefaultFile, parseResult, filteredMetrics, filters, error, isLoading } = useDataStore();
   const [mounted, setMounted] = useState(false);
   const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
 
@@ -41,9 +42,9 @@ function OverviewContent() {
     }
   }, [mounted, autoLoadAttempted, metrics.length, showUpload, loadDefaultFile]);
 
-  // Calculate derived data
-  const weeklyAggregates = useMemo(() => 
-    aggregateByWeek(filteredMetrics), [filteredMetrics]
+  // Calculate derived data based on time period
+  const periodAggregates = useMemo(() => 
+    aggregateByTimePeriod(filteredMetrics, filters.timePeriod), [filteredMetrics, filters.timePeriod]
   );
 
   const kpis = useMemo(() => 
@@ -56,7 +57,7 @@ function OverviewContent() {
 
   // Prepare chart data
   const chartData = useMemo(() => {
-    return weeklyAggregates.map(w => ({
+    return periodAggregates.map(w => ({
       week_start: w.week_start,
       visits_total: w.visits_total,
       pct_over_20: w.pct_over_20,
@@ -64,7 +65,7 @@ function OverviewContent() {
       hours_total: w.hours_total,
       utilization: w.utilization,
     }));
-  }, [weeklyAggregates]);
+  }, [periodAggregates]);
 
   const handleExportNormalized = () => {
     downloadCSV(metrics as unknown as Record<string, unknown>[], 'normalized-metrics.csv');
@@ -159,14 +160,15 @@ function OverviewContent() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-100 mb-1">Overview Dashboard</h1>
           <p className="text-slate-400">
             {parseResult?.metadata.filename} • {kpis.weekCount} weeks • {kpis.providerCount} providers
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <TimePeriodToggle />
           <Button variant="secondary" size="sm" onClick={handleExportChart}>
             <Download className="w-4 h-4" />
             Export Chart Data

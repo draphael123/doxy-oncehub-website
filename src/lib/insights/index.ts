@@ -1,8 +1,12 @@
 export {
   aggregateByWeek,
+  aggregateByMonth,
+  aggregateByTimePeriod,
   aggregateByProvider,
   getUniqueProviders,
   getUniqueWeeks,
+  getUniqueMonths,
+  getMonthLabel,
   filterMetrics,
 } from './aggregations';
 

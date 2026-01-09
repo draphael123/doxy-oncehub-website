@@ -1,4 +1,4 @@
-import { WeeklyProviderMetric, WeeklyAggregate, ProviderAggregate } from '../types';
+import { WeeklyProviderMetric, WeeklyAggregate, ProviderAggregate, TimePeriod } from '../types';
 
 /**
  * Aggregate metrics by week across all providers
@@ -199,5 +199,73 @@ export function filterMetrics(
     }
     return true;
   });
+}
+
+/**
+ * Get month key from date string (YYYY-MM)
+ */
+function getMonthKey(dateStr: string): string {
+  return dateStr.substring(0, 7); // "2025-01-15" -> "2025-01"
+}
+
+/**
+ * Get month label for display
+ */
+export function getMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split('-');
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthIndex = parseInt(month) - 1;
+  return `${monthNames[monthIndex]} ${year}`;
+}
+
+/**
+ * Aggregate metrics by month across all providers
+ */
+export function aggregateByMonth(metrics: WeeklyProviderMetric[]): WeeklyAggregate[] {
+  const byMonth = new Map<string, WeeklyProviderMetric[]>();
+
+  // Group by month
+  for (const metric of metrics) {
+    const monthKey = getMonthKey(metric.week_start);
+    const existing = byMonth.get(monthKey) || [];
+    existing.push(metric);
+    byMonth.set(monthKey, existing);
+  }
+
+  // Aggregate each month
+  const aggregates: WeeklyAggregate[] = [];
+  
+  for (const [monthKey, monthMetrics] of byMonth) {
+    // Use first day of month as the date key
+    const aggregate = computeWeeklyAggregate(`${monthKey}-01`, monthMetrics);
+    aggregates.push(aggregate);
+  }
+
+  // Sort by month
+  return aggregates.sort((a, b) => a.week_start.localeCompare(b.week_start));
+}
+
+/**
+ * Aggregate metrics by time period (weekly or monthly)
+ */
+export function aggregateByTimePeriod(
+  metrics: WeeklyProviderMetric[],
+  timePeriod: TimePeriod
+): WeeklyAggregate[] {
+  if (timePeriod === 'monthly') {
+    return aggregateByMonth(metrics);
+  }
+  return aggregateByWeek(metrics);
+}
+
+/**
+ * Get unique months from metrics
+ */
+export function getUniqueMonths(metrics: WeeklyProviderMetric[]): string[] {
+  const months = new Set<string>();
+  for (const m of metrics) {
+    months.add(getMonthKey(m.week_start));
+  }
+  return Array.from(months).sort();
 }
 

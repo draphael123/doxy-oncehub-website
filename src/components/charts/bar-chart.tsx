@@ -37,7 +37,13 @@ export function BarChart({
 }: BarChartProps) {
   const formatXAxis = (value: string) => {
     try {
-      return format(parseISO(value), 'MMM d');
+      const date = parseISO(value);
+      if (isNaN(date.getTime())) return value;
+      // Check if it's the first of the month (likely monthly data)
+      if (value.endsWith('-01')) {
+        return format(date, 'MMM yyyy');
+      }
+      return format(date, 'MMM d');
     } catch {
       return value;
     }
