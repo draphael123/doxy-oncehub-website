@@ -91,19 +91,22 @@ export abstract class BaseSheetParser {
     // Pattern: "Week of M/D/YY" or "Week of M/D/YYYY" or "Week of M/D"
     const weekOfMatch = headerStr.match(/week\s+of\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i);
     if (weekOfMatch) {
-      return this.buildDateString(weekOfMatch[1], weekOfMatch[2], weekOfMatch[3]);
+      const result = this.buildDateString(weekOfMatch[1], weekOfMatch[2], weekOfMatch[3]);
+      if (result) return result;
     }
 
     // Pattern: "M/D-M/D" date range (use start date) - may have trailing space
     const dateRangeMatch = headerStr.match(/^(\d{1,2})\/(\d{1,2})\s*-\s*\d{1,2}\/\d{1,2}\s*$/);
     if (dateRangeMatch) {
-      return this.buildDateString(dateRangeMatch[1], dateRangeMatch[2]);
+      const result = this.buildDateString(dateRangeMatch[1], dateRangeMatch[2]);
+      if (result) return result;
     }
 
     // Pattern: "M/D/YY" or "M/D/YYYY"
     const dateMatch = headerStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
     if (dateMatch) {
-      return this.buildDateString(dateMatch[1], dateMatch[2], dateMatch[3]);
+      const result = this.buildDateString(dateMatch[1], dateMatch[2], dateMatch[3]);
+      if (result) return result;
     }
 
     // Pattern: "Mon D, YYYY" (e.g., "Jan 6, 2025")
@@ -116,7 +119,13 @@ export abstract class BaseSheetParser {
       const month = monthMap[monthNameMatch[1].toLowerCase()];
       const day = monthNameMatch[2].padStart(2, '0');
       const year = monthNameMatch[3];
-      return `${year}-${month}-${day}`;
+      const dateStr = `${year}-${month}-${day}`;
+      
+      // Validate the date
+      const testDate = new Date(dateStr);
+      if (!isNaN(testDate.getTime())) {
+        return dateStr;
+      }
     }
 
     return null;
@@ -125,16 +134,24 @@ export abstract class BaseSheetParser {
   /**
    * Build ISO date string from parsed components
    * If year is not provided, assume current year or previous year if month is in future
+   * Returns null if the resulting date is invalid
    */
-  private buildDateString(month: string, day: string, year?: string): string {
+  private buildDateString(month: string, day: string, year?: string): string | null {
     let fullYear: string;
+    
+    const parsedMonth = parseInt(month);
+    const parsedDay = parseInt(day);
+    
+    // Basic validation
+    if (isNaN(parsedMonth) || isNaN(parsedDay) || parsedMonth < 1 || parsedMonth > 12 || parsedDay < 1 || parsedDay > 31) {
+      return null;
+    }
     
     if (!year) {
       // No year provided - infer from current date
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth() + 1;
-      const parsedMonth = parseInt(month);
       
       // If the month is more than 2 months in the future, use previous year
       if (parsedMonth > currentMonth + 2) {
@@ -144,12 +161,20 @@ export abstract class BaseSheetParser {
       }
     } else if (year.length === 2) {
       const yearNum = parseInt(year);
-      fullYear = yearNum >= 50 ? `19${year}` : `20${year}`;
+      fullYear = yearNum >= 50 ? `19${year}` : `20${year.padStart(2, '0')}`;
     } else {
       fullYear = year;
     }
     
-    return `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const dateStr = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    
+    // Validate the date is actually valid
+    const testDate = new Date(dateStr);
+    if (isNaN(testDate.getTime())) {
+      return null;
+    }
+    
+    return dateStr;
   }
 
   /**

@@ -41,6 +41,17 @@ export function TrendChart({
     }
   };
 
+  const formatDateSafe = (value: string | undefined): string => {
+    if (!value) return '';
+    try {
+      const date = parseISO(value);
+      if (isNaN(date.getTime())) return value;
+      return format(date, 'MMM d, yyyy');
+    } catch {
+      return value;
+    }
+  };
+
   const CustomTooltip = ({ active, payload, label }: {
     active?: boolean;
     payload?: { name: string; value: number; color: string }[];
@@ -51,7 +62,7 @@ export function TrendChart({
     return (
       <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-xl">
         <p className="text-slate-300 text-sm mb-2">
-          {label ? format(parseISO(label), 'MMM d, yyyy') : ''}
+          {formatDateSafe(label)}
         </p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
