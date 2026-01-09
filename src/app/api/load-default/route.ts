@@ -38,7 +38,9 @@ export async function GET() {
 
     // Parse the workbook
     const filename = path.basename(filePath);
-    const parseResult = parseWorkbook(buffer.buffer, filename);
+    // Convert Node.js Buffer to ArrayBuffer
+    const arrayBuffer = new Uint8Array(buffer).buffer;
+    const parseResult = parseWorkbook(arrayBuffer, filename);
 
     if (parseResult.metrics.length === 0) {
       return NextResponse.json(
