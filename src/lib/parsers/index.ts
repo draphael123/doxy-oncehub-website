@@ -3,6 +3,8 @@ import { ParseResult, ParsedSheet, ParserWarning, WeeklyProviderMetric } from '.
 import { DoxyOver20Parser } from './doxy-over-20-parser';
 import { GustoHoursParser } from './gusto-hours-parser';
 import { DoxyVisitsParser } from './doxy-visits-parser';
+import { OncehubVisitsParser } from './oncehub-visits-parser';
+import { OncehubProgramParser } from './oncehub-program-parser';
 import { BaseSheetParser } from './base-parser';
 
 /**
@@ -12,6 +14,8 @@ const PARSER_REGISTRY: Record<string, () => BaseSheetParser> = {
   'Doxy - Over 20 minutes': () => new DoxyOver20Parser(),
   'Gusto Hours ': () => new GustoHoursParser(),
   'Doxy Visits': () => new DoxyVisitsParser(),
+  'Oncehub Report - Number of Visi': () => new OncehubVisitsParser(),
+  'Oncehub - Program Grouped': () => new OncehubProgramParser(),
 };
 
 /**
@@ -47,6 +51,12 @@ function findParser(sheetName: string): BaseSheetParser | null {
   }
   if (normalizedInput.includes('doxy') && normalizedInput.includes('visit')) {
     return new DoxyVisitsParser();
+  }
+  if (normalizedInput.includes('oncehub') && normalizedInput.includes('number')) {
+    return new OncehubVisitsParser();
+  }
+  if (normalizedInput.includes('oncehub') && normalizedInput.includes('program')) {
+    return new OncehubProgramParser();
   }
 
   return null;
@@ -134,5 +144,12 @@ export function mergeMetrics(metrics: WeeklyProviderMetric[]): WeeklyProviderMet
   return Array.from(merged.values());
 }
 
-export { DoxyOver20Parser, GustoHoursParser, DoxyVisitsParser, BaseSheetParser };
+export { 
+  DoxyOver20Parser, 
+  GustoHoursParser, 
+  DoxyVisitsParser, 
+  OncehubVisitsParser,
+  OncehubProgramParser,
+  BaseSheetParser 
+};
 

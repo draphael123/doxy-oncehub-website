@@ -9,7 +9,7 @@
 export interface WeeklyProviderMetric {
   week_start: string; // ISO date string (YYYY-MM-DD)
   provider: string;
-  source: 'doxy_over_20' | 'gusto_hours' | 'doxy_visits';
+  source: 'doxy_over_20' | 'gusto_hours' | 'doxy_visits' | 'oncehub_visits' | 'oncehub_program';
   
   // Doxy Over 20 Minutes fields
   visits_total?: number;
@@ -19,6 +19,11 @@ export interface WeeklyProviderMetric {
   
   // Gusto Hours fields
   hours_total?: number;
+  
+  // Oncehub Program Grouped fields
+  program?: string;
+  visit_group?: string;
+  program_visits?: number;
 }
 
 /**
@@ -130,13 +135,15 @@ export interface RollingAverage {
 
 export type TimePeriod = 'weekly' | 'monthly';
 
+export type DataSource = 'doxy_over_20' | 'gusto_hours' | 'doxy_visits' | 'oncehub_visits' | 'oncehub_program';
+
 export interface FilterState {
   providers: string[];
   dateRange: {
     start: string | null;
     end: string | null;
   };
-  sources: ('doxy_over_20' | 'gusto_hours' | 'doxy_visits')[];
+  sources: DataSource[];
   timePeriod: TimePeriod;
 }
 

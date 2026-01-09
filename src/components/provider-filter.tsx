@@ -23,7 +23,7 @@ export function ProviderFilter() {
     }
   };
 
-  const toggleSource = (source: 'doxy_over_20' | 'gusto_hours' | 'doxy_visits') => {
+  const toggleSource = (source: 'doxy_over_20' | 'gusto_hours' | 'doxy_visits' | 'oncehub_visits' | 'oncehub_program') => {
     const current = filters.sources;
     if (current.includes(source)) {
       setFilters({ sources: current.filter(s => s !== source) });
@@ -38,10 +38,12 @@ export function ProviderFilter() {
     filters.dateRange.start !== null ||
     filters.dateRange.end !== null;
 
-  const sourceLabels = {
+  const sourceLabels: Record<string, string> = {
     doxy_over_20: 'Doxy Over 20',
     gusto_hours: 'Gusto Hours',
     doxy_visits: 'Doxy Visits',
+    oncehub_visits: 'Oncehub Visits',
+    oncehub_program: 'Oncehub Program',
   };
 
   return (
@@ -102,7 +104,7 @@ export function ProviderFilter() {
             Data Sources
           </label>
           <div className="flex flex-wrap gap-2">
-            {(['doxy_over_20', 'gusto_hours', 'doxy_visits'] as const).map(source => (
+            {(['doxy_visits', 'doxy_over_20', 'gusto_hours', 'oncehub_visits', 'oncehub_program'] as const).map(source => (
               <button
                 key={source}
                 onClick={() => toggleSource(source)}

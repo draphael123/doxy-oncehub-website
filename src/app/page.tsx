@@ -22,6 +22,7 @@ import { useDataStore } from '@/lib/store';
 import { aggregateByTimePeriod, calculateKPIs, generateInsights } from '@/lib/insights';
 import { downloadCSV } from '@/lib/demo-data';
 import { TimePeriodToggle } from '@/components/time-period-toggle';
+import { ProgramBreakdown } from '@/components/program-breakdown';
 
 function OverviewContent() {
   const searchParams = useSearchParams();
@@ -288,6 +289,9 @@ function OverviewContent() {
           </div>
         </div>
       )}
+
+      {/* Program Breakdown (from Oncehub data) */}
+      <ProgramBreakdown />
     </div>
   );
 }

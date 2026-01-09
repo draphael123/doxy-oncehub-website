@@ -8,6 +8,7 @@ import { ProviderFilter } from '@/components/provider-filter';
 import { TrendChart } from '@/components/charts/trend-chart';
 import { BarChart } from '@/components/charts/bar-chart';
 import { TimePeriodToggle } from '@/components/time-period-toggle';
+import { DataSourcesSummary } from '@/components/data-sources-summary';
 import { useDataStore } from '@/lib/store';
 import { aggregateByProvider, getUniqueWeeks, aggregateByTimePeriod } from '@/lib/insights';
 import { downloadCSV } from '@/lib/demo-data';
@@ -151,8 +152,9 @@ export default function ProvidersPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Filters Sidebar */}
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-4">
           <ProviderFilter />
+          <DataSourcesSummary />
         </div>
 
         {/* Main Content */}
