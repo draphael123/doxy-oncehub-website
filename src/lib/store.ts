@@ -15,6 +15,7 @@ interface DataStore {
   // Actions
   setParseResult: (result: ParseResult) => void;
   loadDemoData: () => void;
+  loadDefaultFile: () => Promise<void>;
   setFilters: (filters: Partial<FilterState>) => void;
   resetFilters: () => void;
   clearData: () => void;
@@ -60,6 +61,26 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loadDefaultFile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/load-default');
+      const result = await response.json();
+      
+      if (result.success) {
+        setParseResultState(result.data);
+      } else {
+        // If default file not found, don't show error - just stay on upload screen
+        console.log('Default file not available:', result.error);
+      }
+    } catch (err) {
+      console.error('Failed to load default file:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const setFilters = useCallback((newFilters: Partial<FilterState>) => {
     setFiltersState(prev => ({ ...prev, ...newFilters }));
   }, []);
@@ -99,6 +120,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     error,
     setParseResult,
     loadDemoData,
+    loadDefaultFile,
     setFilters,
     resetFilters,
     clearData,

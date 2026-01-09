@@ -25,12 +25,21 @@ import { downloadCSV } from '@/lib/demo-data';
 function OverviewContent() {
   const searchParams = useSearchParams();
   const showUpload = searchParams.get('upload') === 'true';
-  const { metrics, loadDemoData, parseResult, filteredMetrics, error } = useDataStore();
+  const { metrics, loadDemoData, loadDefaultFile, parseResult, filteredMetrics, error, isLoading } = useDataStore();
   const [mounted, setMounted] = useState(false);
+  const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Auto-load default file on first mount
+  useEffect(() => {
+    if (mounted && !autoLoadAttempted && metrics.length === 0 && !showUpload) {
+      setAutoLoadAttempted(true);
+      loadDefaultFile();
+    }
+  }, [mounted, autoLoadAttempted, metrics.length, showUpload, loadDefaultFile]);
 
   // Calculate derived data
   const weeklyAggregates = useMemo(() => 
@@ -67,7 +76,17 @@ function OverviewContent() {
 
   if (!mounted) return null;
 
-  // Empty state - no data loaded
+  // Loading state - auto-loading default file
+  if (isLoading && metrics.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mb-4" />
+        <p className="text-slate-300 text-lg">Loading data...</p>
+      </div>
+    );
+  }
+
+  // Empty state - no data loaded (show upload if default file not found)
   if (metrics.length === 0 || showUpload) {
     return (
       <div className="space-y-8">
